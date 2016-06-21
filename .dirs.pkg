@@ -1,0 +1,275 @@
+
+########################################################################
+#	Set up directory stack functions
+# 
+# jks - 04/19/95 modified  to work in a reasonable manner
+# jks - 08/21/95 modified to use Korn Shell arrays - much faster
+# jks - 08/23/95 mkdir DIR_DIR if it does not exist
+# jks - 12/26/97 compatible with bash 2.0
+#
+# these functions will allow you to create a set of directorys that
+# can be saved to a file, and recalled to memory.  Once stored in memory
+# ( in a Korn Shell array ) the list may be easily displayed.  You can jump
+# to any directory with the g command by referring to its number. The list
+# may be added to, deleted from, and saved back to a file
+#
+# example:
+#
+# to create a directory list that stores paths for the ctp forms modules
+# 
+# cd /usr1av2/claims/ctpsrc/forms/src
+# pushd
+# cd ../usrdoc
+# pushd
+# cd ../isdoc
+# pushd
+# 
+# now enter 'dirs' or 'd' and you will see
+#
+# OLDPWD: /usr1av2/claims/ctpsrc/forms/usrdoc
+#
+# 0       /usr1av2/claims/ctpsrc/forms/isdoc
+# 1       /usr1av2/claims/ctpsrc/forms/usrdoc
+# 2       /usr1av2/claims/ctpsrc/forms/src
+#
+# enter the following to save to file:
+#    saved ctpforms 'Source, User docs and Internal docs for CTP Oracle Forms'
+#    ( these are saved in $HOME/.dirs/<filename>
+# 
+# now type 'cleardir'
+# type 'd' to see that directories have been cleared
+# type 'loadd ctpforms' a
+# now type 'd' to see that directory set has been reloaded
+# type 'g 1' to goto the /usr1av2/claims/ctpsrc/forms/usrdoc dir
+#
+# to load these functions automatically when you login, just make sure 
+# this file is in your home directory, and include this line in your
+# .alias or .profile file.
+#
+# . <your home dir> /.dirs.pkg
+#
+# ex: . /usr1av2/jared/.dirs.pkg
+#
+
+
+####################################################
+#
+# Functions in dirs
+#
+# chkhome:  sets the HOME variable if not already set - used internally
+# chkname:  sets the LOGNAME variable if not already set - used internally
+#
+# cleardir: resets the directory stack
+#
+# dirs: display current directory stack
+#
+# g: the 'goto dir' command - use with dir's number as displayed with 'dirs'
+#
+# gold: goto old; changes dir to OLDPWD
+#
+# loaddir: loads the specified directory stack file into the directory stack
+#          im memory.  if no file specified, loads '${HOME/.dirs/defdir'
+#
+# popd: pop the top directory off of the stack
+#
+# pushd: push the current directory onto the top of the directory stack
+#
+# rotd: rotate the directory stack; moves topmost dir to bottom of stack
+#
+# showdir: by itself, shows comment line ( first line ) from all files in
+#          the $HOME/.dirs directory.  when an argument is given, it will
+#          show the contents of specified directory stack file.
+#          ie. 'showdir ctpforms' would display the contents of our example 
+#          file
+#
+# showalldir: shorcut command to show contents of all stack files
+#
+# savedir: saves the contents of the current directory stack to the named file.
+#          may optionally include a comment.
+#          if no filename is given, it will default to $HOME/.dirs/defdir
+#          if no comment is given, it defaults to 'created by savedir'
+#          if you resave the directory stack to a directory stack file that
+#          already exists, the current comment will be preserved, so there is
+#          no need to type it in again if you don't want to change it
+#      
+#          here are various forms of savedir:
+#
+#          savedir
+#          this will save the current directory stack to $HOME/.dirs/defdir
+#          with the comment 'defdir - created by savedir'
+#
+#          savedir ctpforms 'Source for Oracle forms'
+#          this will save the current directory stack to $HOME/.dirs/ctpforms
+#          with the comment 'ctpforms - Source for Oracle forms'
+#
+#          if load the ctpforms directory stack and then add to it with 
+#          'pushdir', you may use the command 'savedir ctpforms' to resave
+#          and the comment line will be preserved
+
+PAGER='less -eirx8'
+
+if [ `echo $SHELL | grep ksh` ]; then
+	ECHO="echo  "
+else 
+	# for bash
+	ECHO="echo -e "
+fi
+
+# make sure $HOME/.dirs exists
+: ${DIR_DIR:=${HOME}/.dirs}
+[ ! -d "$DIR_DIR" ] && mkdir $DIR_DIR
+
+# make sure LOGNAME is set
+function chkname {
+	[ -z "${LOGNAME}" ] && export LOGNAME=`logname`
+}
+
+# make sure LOGNAME and HOME are set
+function chkhome {
+	chkname
+	[ -z "${HOME}" ] && export HOME=`grep ${LOGNAME} /etc/passwd | cut -f6 -d:`
+}
+
+
+function popd {				# pop off top directory
+	typeset maxidx
+	(( maxidx = ${#DIRS[*]} - 1 ))
+	rotd
+	unset DIRS[${maxidx}]
+}
+
+function dirs {				# show directory stack
+	$ECHO "\n"OLDPWD:'\t'${OLDPWD}
+	echo
+	typeset index=0
+	# changed for SUN - does not work with -1 for some reason
+	#while (( index < (${#DIRS[*]}-1) ))
+	#while (( index < ( ${#DIRS[*]} ) ))
+	# bash
+	while (( index < ${#DIRS[*]} ))
+	do
+		$ECHO "${index} \t${DIRS[index]}"
+		(( index = index + 1 ))
+	done | ${PAGER}
+	echo
+}
+
+function pushd {			# push current directory onto stack
+	typeset index index2 idxcnt
+	(( idxcnt =  ${#DIRS[*]} ))
+	(( index = idxcnt ))
+	while (( index > 0 ))
+	do
+		(( index2 = index - 1))
+		DIRS[${index}]=${DIRS[index2]}
+		(( index = index - 1))
+	done
+	DIRS[0]=${PWD}
+}
+
+function rotd {				# rotate directory stack - top to bottom
+	typeset index=0 index2 _tmpdir idxcnt
+	_tmpdir=${DIRS[0]}
+	(( idxcnt = ${#DIRS[*]} - 1 ))
+	while (( index < idxcnt ))
+	do
+		(( index2 = index + 1 ))
+		DIRS[${index}]=${DIRS[${index2}]}
+		(( index = index + 1 ))
+	done
+	DIRS[${idxcnt}]=$_tmpdir
+}
+
+function g { 		# go to requested dir on stack - top if none specified
+	# setup requested directory
+	typeset rdir 
+	rdir=${1:-0}
+	[ -z "${DIRS[${rdir}]}" ] && {
+		$ECHO "$rdir not in directory stack"
+		return
+	}
+	cd ${DIRS[${rdir}]}
+}
+
+function gold {  # goto $OLDPWD
+	cd ${OLDPWD}
+}
+
+function cleardir {
+	unset DIRS
+}
+
+# load predefined dirs into env
+# first line in dir file is a comment - hence the 'tail'
+function loaddir {
+	chkhome
+	DIR2LOAD=${1}
+	: ${DIR2LOAD:=defdir}
+	DIR2LOAD=${DIR_DIR}/${DIR2LOAD}
+	cleardir
+	typeset index=0 l
+	for l in `tail -n+2 ${DIR2LOAD}`
+	do
+		DIRS[$index]=$l
+		(( index = index + 1 ))
+	done
+
+}
+
+function showdir {
+	chkhome
+	if [ "$1" = "" ] ;then
+		for i in ${DIR_DIR}/*; do
+			head -1 ${i}
+		done | ${PAGER}
+	else
+	${PAGER} `ls ${DIR_DIR}/${*}`
+	fi
+}
+
+function showalldir {
+	showdir '*'
+}
+
+# save current dir stack to dir file
+# use 'defdir' if none specified
+# ex: 
+#  savedir - this creates .dirs/defdir
+#  savedir ctp - this creates .dirs/ctp
+#  savedir ctp 'ctp source directories' - this creates .dirs/ctp with a comment
+function savedir {
+	chkhome
+	DIR2SAVE=${1}
+	: ${DIR2SAVE:=defdir}
+	DIR_NAME=${DIR2SAVE}
+	DIR2SAVE=${DIR_DIR}/${DIR2SAVE}
+	DIR_COMM=${2}
+	[ "${DIR_NAME}" = "defdir" ] && DIR_COMM="DEFAULT created by savedir"
+	# get current comment if file exists
+	: ${DIR_COMM:=` [ -f "$DIR2SAVE" ] && head -1 $DIR2SAVE | cut -f2 -d-`}
+	: ${DIR_COMM:='created by savedir'}
+	$ECHO "${DIR_NAME} - ${DIR_COMM}" >| ${DIR2SAVE}
+	typeset index=0
+	while (( index < ${#DIRS[*]} ))
+	do
+		$ECHO ${DIRS[${index}]} >> ${DIR2SAVE}
+		(( index = index + 1 ))
+	done
+}	
+
+alias clrd='cleardir'
+alias clrdir='cleardir'
+alias cleard='cleardir'
+alias showd='showdir'
+alias saved='savedir'
+alias loadd='loaddir'
+alias showall='showalldir'
+alias sad='showalldir'
+alias o='loadd'
+alias s='showd'
+alias d='dirs'
+alias dm='dirs|more'
+
+typeset -fx pushd popd rotd dirs loaddir showdir savedir g gold showalldir
+
+
