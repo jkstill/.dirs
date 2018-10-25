@@ -268,6 +268,7 @@ alias sad='showalldir'
 alias o='loadd'
 alias s='showd'
 alias d='dirs'
+alias dcat='dirs|cat'
 alias dm='dirs|more'
 
 typeset -fx pushd popd rotd dirs loaddir showdir savedir g gold showalldir
