@@ -257,6 +257,11 @@ function savedir {
 	done
 }	
 
+function searchdir {
+	declare searchTerm=$1
+	grep "$searchTerm" $DIR_DIR/*
+}
+
 alias clrd='cleardir'
 alias clrdir='cleardir'
 alias cleard='cleardir'
@@ -270,6 +275,7 @@ alias s='showd'
 alias d='dirs'
 alias dcat='dirs|cat'
 alias dm='dirs|more'
+alias sd='searchdir $1'
 
 typeset -fx pushd popd rotd dirs loaddir showdir savedir g gold showalldir
 
