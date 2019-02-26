@@ -66,13 +66,15 @@
  gold: goto old; changes dir to OLDPWD
 
  loaddir: loads the specified directory stack file into the directory stack
-          im memory.  if no file specified, loads '${HOME/.dirs/defdir'
+          in memory.  if no file specified, loads '${HOME/.dirs/defdir'
 
  popd: pop the top directory off of the stack
 
  pushd: push the current directory onto the top of the directory stack
 
  rotd: rotate the directory stack; moves topmost dir to bottom of stack
+
+ searchdir: search for a term in the directories saved in .dirs
 
  showdir: by itself, shows comment line ( first line ) from all files in
           the $HOME/.dirs directory.  when an argument is given, it will
