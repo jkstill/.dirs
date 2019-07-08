@@ -174,6 +174,8 @@ cleardir: resets the directory stack
 
 dirs: display current directory stack
 
+dl: show the directory pointed to by the number in the directory stack
+
 g: the 'goto dir' command - use with dir's number as displayed with 'dirs'
 
 gold: goto old; changes dir to OLDPWD
