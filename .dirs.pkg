@@ -199,7 +199,8 @@ function dl { 		# go to requested dir on stack - top if none specified
 		$ECHO "$rdir not in directory stack"
 		return
 	}
-	ls -ld ${DIRS[${rdir}]}
+	# first level only
+	ls -ld ${DIRS[${rdir}]}/*
 }
 
 function gold {  # goto $OLDPWD
