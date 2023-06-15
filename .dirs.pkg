@@ -273,7 +273,7 @@ function searchdir {
 	declare searchTerm=$1
 	#grep "$searchTerm" $DIR_DIR/*
 	# do not show path
-	grep --color=auto "perl" $DIR_DIR/* | sed -r -e "s#$HOME/.dirs/##"
+	grep --color=auto "$searchTerm" $DIR_DIR/* | sed -r -e "s#$HOME/.dirs/##"
 }
 
 alias clrd='cleardir'
