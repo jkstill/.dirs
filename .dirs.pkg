@@ -106,7 +106,7 @@
 #          'pushdir', you may use the command 'savedir ctpforms' to resave
 #          and the comment line will be preserved
 
-PAGER='less -eirx8'
+PAGER='less -Feirx8'
 
 if [ `echo $SHELL | grep ksh` ]; then
 	ECHO="echo  "
